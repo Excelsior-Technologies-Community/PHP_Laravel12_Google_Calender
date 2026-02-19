@@ -1,9 +1,9 @@
-# PHP_Laravel12_Google_Calander
+# PHP_Laravel12_Google_Calendar
 
 
 ## Project Description
 
-PHP_Laravel12_Google_Calander is a Laravel 12 web application that demonstrates how to integrate Google Calendar using the Spatie Laravel Google Calendar package.
+PHP_Laravel12_Google_Calendar is a Laravel 12 web application that demonstrates how to integrate Google Calendar using the Spatie Laravel Google Calendar package.
 
 This project allows users to perform complete CRUD (Create, Read, Update, Delete) operations on Google Calendar events directly from a Laravel application.
 
@@ -48,14 +48,14 @@ Instead of storing events in a local database, all events are stored in the user
 ### Open terminal / CMD and run:
 
 ```
-composer create-project laravel/laravel PHP_Laravel12_Google_Calender "12.*"
+composer create-project laravel/laravel PHP_Laravel12_Google_Calendar "12.*"
 
 ```
 
 ### Go inside project:
 
 ```
-cd PHP_Laravel12_Google_Calender
+cd PHP_Laravel12_Google_Calendar
 
 ```
 
@@ -74,7 +74,7 @@ This command creates a new Laravel 12 project folder with all required Laravel f
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=laravel12_google_calender
+DB_DATABASE=laravel12_google_calendar
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -83,7 +83,7 @@ DB_PASSWORD=
 ### Create database in MySQL / phpMyAdmin:
 
 ```
-Database name: laravel12_google_calender
+Database name: laravel12_google_calendar
 
 ```
 
