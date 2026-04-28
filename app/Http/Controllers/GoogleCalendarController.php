@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\GoogleCalendar\Event;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class GoogleCalendarController extends Controller
 {
@@ -12,15 +13,36 @@ class GoogleCalendarController extends Controller
     /**
      * Display all Google Calendar events
      */
-    public function index()
-    {
-        // Get all events
-        $events = Event::get();
+ public function index(Request $request)
+{
+    $events = Event::get();
 
-        // Return view
-        return view('calendar.index', compact('events'));
+    // SEARCH
+    if ($request->keyword) {
+        $events = collect($events)->filter(function ($event) use ($request) {
+            return stripos($event->name, $request->keyword) !== false;
+        });
     }
 
+    // PAGINATION
+    $page = LengthAwarePaginator::resolveCurrentPage();
+    $perPage = 3;
+
+    $paginated = new LengthAwarePaginator(
+        collect($events)->forPage($page, $perPage)->values(),
+        collect($events)->count(),
+        $perPage,
+        $page,
+        [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]
+    );
+
+    return view('calendar.index', [
+        'events' => $paginated   // ✅ IMPORTANT FIX
+    ]);
+}
 
     /**
      * Show create event form
@@ -116,6 +138,4 @@ class GoogleCalendarController extends Controller
 
         return redirect('/calendar');
     }
-
-
 }
