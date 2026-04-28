@@ -1,140 +1,125 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Google Calendar Events</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <style>
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f7fc;
-            margin: 0;
-            padding: 0;
+            background: #f4f6fb;
         }
 
-        .container {
-            width: 90%;
-            max-width: 1100px;
-            margin: 40px auto;
+        .card-box {
             background: #fff;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
 
-        h2 {
-            margin-bottom: 20px;
+        .title {
+            font-size: 22px;
+            font-weight: 600;
         }
 
-        .btn {
-            text-decoration: none;
-            padding: 10px 18px;
-            border-radius: 6px;
-            color: white;
-            font-size: 14px;
-        }
+        .btn-show { background: #17a2b8; color:#fff; }
+        .btn-edit { background: #ffc107; color:#000; }
+        .btn-delete { background: #dc3545; color:#fff; }
 
-        .btn-create {
-            background: #28a745;
-        }
-
-        .btn-show {
-            background: #17a2b8;
-        }
-
-        .btn-edit {
-            background: #ffc107;
-            color: black;
-        }
-
-        .btn-delete {
-            background: #dc3545;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table th {
-            background: #343a40;
-            color: white;
-            padding: 12px;
-        }
-
-        table td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        table tr:hover {
-            background: #f1f1f1;
-        }
-
-        .actions a {
-            margin-right: 5px;
+        .table th {
+            background: #2f3542;
+            color: #fff;
         }
     </style>
-
 </head>
 
 <body>
 
-    <div class="container">
+<div class="container mt-5">
 
-        <h2>📅 Google Calendar Events</h2>
+    <div class="card-box">
 
-        <a href="/calendar/create" class="btn btn-create">
-            + Create Event
-        </a>
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="title">📅 Google Calendar Events</div>
 
-        <br><br>
+            <a href="/calendar/create" class="btn btn-success">
+                + Create Event
+            </a>
+        </div>
 
-        <table>
+        <!-- SEARCH -->
+        <form method="GET" action="/calendar" class="mt-3 row g-2">
+            <div class="col-md-10">
+                <input type="text"
+                       name="keyword"
+                       class="form-control"
+                       placeholder="Search event title..."
+                       value="{{ request('keyword') }}">
+            </div>
 
-            <tr>
-                <th>Title</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Action</th>
-            </tr>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
 
-            @foreach($events as $event)
+        <!-- TABLE -->
+        <div class="table-responsive mt-4">
 
-                <tr>
+            <table class="table table-bordered table-hover">
 
-                    <td>{{ $event->name }}</td>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th width="220">Action</th>
+                    </tr>
+                </thead>
 
-                    <td>{{ $event->startDateTime }}</td>
+                <tbody>
+                @forelse($events as $event)
 
-                    <td>{{ $event->endDateTime }}</td>
+                    <tr>
+                        <td>{{ $event->name }}</td>
+                        <td>{{ $event->startDateTime }}</td>
+                        <td>{{ $event->endDateTime }}</td>
 
-                    <td class="actions">
+                        <td>
+                            <a href="{{ url('/calendar/show/' . $event->id) }}"
+                               class="btn btn-sm btn-show">Show</a>
 
-                        <a href="{{ url('/calendar/show/' . $event->id) }}" class="btn btn-show">
-                            Show
-                        </a>
+                            <a href="{{ url('/calendar/edit/' . $event->id) }}"
+                               class="btn btn-sm btn-edit">Edit</a>
 
-                        <a href="{{ url('/calendar/edit/' . $event->id) }}" class="btn btn-edit">
-                            Edit
-                        </a>
+                            <a href="{{ url('/calendar/delete/' . $event->id) }}"
+                               class="btn btn-sm btn-delete"
+                               onclick="return confirm('Are you sure?')">
+                               Delete
+                            </a>
+                        </td>
+                    </tr>
 
-                        <a href="{{ url('/calendar/delete/' . $event->id) }}" class="btn btn-delete"
-                            onclick="return confirm('Are You Sure?')">
-                            Delete
-                        </a>
+                @empty
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            No events found
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
 
-                    </td>
+            </table>
+        </div>
 
-
-                </tr>
-
-            @endforeach
-
-        </table>
+        <!-- PAGINATION -->
+        <div class="mt-3 d-flex justify-content-center">
+            {{ $events->withQueryString()->links('pagination::bootstrap-5') }}
+        </div>
 
     </div>
 
-</body>
+</div>
 
+</body>
 </html>
