@@ -61,6 +61,23 @@
             border-radius: 20px;
             font-size: 14px;
         }
+
+        .btn-meet {
+            background: #0f9d58;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .btn-meet:hover {
+            background: #0b8043;
+            color: white;
+        }
     </style>
 </head>
 
@@ -71,7 +88,7 @@
                 <h2><i class="fas fa-calendar-check"></i> Event Details</h2>
             </div>
             
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="event-detail">
                     <div class="event-label"><i class="fas fa-tag"></i> Event Title</div>
                     <div class="event-value">{{ $event->name }}</div>
@@ -88,9 +105,9 @@
                 </div>
                 
                 <div class="event-detail">
-                    <div class="event-label"><i class="fas fa-category"></i> Category</div>
+                    <div class="event-label"><i class="fas fa-layer-group"></i> Category</div>
                     <div class="event-value">
-                        <span class="badge-category category-{{ $metadata['category'] ?? 'general' }}">
+                        <span class="badge bg-secondary badge-category">
                             {{ ucfirst($metadata['category'] ?? 'General') }}
                         </span>
                     </div>
@@ -102,6 +119,28 @@
                     <div class="event-value">{{ $metadata['description'] }}</div>
                 </div>
                 @endif
+
+                @if(!empty($metadata['attendees']) && count(array_filter($metadata['attendees'])) > 0)
+                <div class="event-detail">
+                    <div class="event-label"><i class="fas fa-users"></i> Attendees</div>
+                    <div class="event-value">
+                        @foreach(array_filter($metadata['attendees']) as $email)
+                            <span class="badge bg-info text-dark mb-1">{{ trim($email) }}</span>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                @if(isset($event->googleEvent->hangoutLink) && $event->googleEvent->hangoutLink)
+                <div class="event-detail" style="background-color: #f1f8e9;">
+                    <div class="event-label"><i class="fas fa-video text-success"></i> Google Meet</div>
+                    <div class="event-value">
+                        <a href="{{ $event->googleEvent->hangoutLink }}" target="_blank" class="btn-meet">
+                            <i class="fas fa-video"></i> Join Meeting
+                        </a>
+                    </div>
+                </div>
+                @endif
                 
                 @if(!empty($metadata['status']))
                 <div class="event-detail">
@@ -110,7 +149,7 @@
                 </div>
                 @endif
                 
-                <div class="btn-group">
+                <div class="btn-group w-100 d-flex justify-content-center gap-3">
                     <a href="/calendar/edit/{{ $event->id }}" class="btn btn-warning">
                         <i class="fas fa-edit"></i> Edit Event
                     </a>

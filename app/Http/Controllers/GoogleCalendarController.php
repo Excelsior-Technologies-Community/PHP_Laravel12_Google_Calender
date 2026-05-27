@@ -9,21 +9,19 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Google_Service_Calendar_Event;
 use Google_Service_Calendar_EventDateTime;
+use Google_Service_Calendar_EventAttendee;
+use Google_Service_Calendar_ConferenceData;
+use Google_Service_Calendar_EventReminders;
 
 class GoogleCalendarController extends Controller
 {
-    /**
-     * Display all Google Calendar events with filters
-     */
     public function index(Request $request)
     {
-        // Get events with date range filter
         $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->subDays(30);
         $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now()->addDays(60);
         
         $events = Event::get($startDate, $endDate);
         
-        // Filter by category
         if ($request->category) {
             $events = collect($events)->filter(function ($event) use ($request) {
                 $description = json_decode($event->description ?? '{}', true);
@@ -31,7 +29,6 @@ class GoogleCalendarController extends Controller
             });
         }
         
-        // Search by keyword
         if ($request->keyword) {
             $events = collect($events)->filter(function ($event) use ($request) {
                 return stripos($event->name, $request->keyword) !== false ||
@@ -39,10 +36,8 @@ class GoogleCalendarController extends Controller
             });
         }
         
-        // Sort events
         $events = collect($events)->sortBy('startDateTime');
         
-        // Pagination
         $page = LengthAwarePaginator::resolveCurrentPage();
         $perPage = 10;
         
@@ -57,9 +52,6 @@ class GoogleCalendarController extends Controller
         return view('calendar.index', compact('paginated'));
     }
     
-    /**
-     * Show calendar view (Month/Week/Day)
-     */
     public function calendarView(Request $request)
     {
         $view = $request->view ?? 'month';
@@ -68,9 +60,6 @@ class GoogleCalendarController extends Controller
         return view('calendar.calendar', compact('view', 'date'));
     }
     
-    /**
-     * Get events for AJAX calendar
-     */
     public function getEvents(Request $request)
     {
         $start = Carbon::parse($request->start);
@@ -95,17 +84,11 @@ class GoogleCalendarController extends Controller
         return response()->json($formattedEvents);
     }
     
-    /**
-     * Show create event form
-     */
     public function create()
     {
         return view('calendar.create');
     }
     
-    /**
-     * Store new event with advanced features
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -116,11 +99,10 @@ class GoogleCalendarController extends Controller
             'description' => 'nullable',
         ]);
         
-        // Prepare event data with metadata
         $metadata = [
             'description' => $request->description,
             'category' => $request->category,
-            'color' => $request->color ?? '#3788d8',
+            'color' => $request->color_id ?? $request->color ?? '#3788d8',
             'status' => $request->status ?? 'confirmed',
             'reminders' => $request->reminders ?? [],
             'attendees' => explode(',', $request->attendees ?? ''),
@@ -133,13 +115,37 @@ class GoogleCalendarController extends Controller
         $event->endDateTime = Carbon::parse($request->end);
         $event->description = json_encode($metadata);
         
-        // Add reminders
-        if ($request->has_reminder) {
-            $event->addReminder(30, 'popup'); // 30 minutes before
-            $event->addReminder(60, 'email'); // 1 hour before
+        if ($request->color_id) {
+            $event->googleEvent->setColorId($request->color_id);
+        }
+
+        if ($request->attendees) {
+            $attendeeList = [];
+            $emails = explode(',', $request->attendees);
+            foreach ($emails as $email) {
+                $cleanEmail = trim($email);
+                if (!empty($cleanEmail) && filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+                    $attendeeList[] = new \Google_Service_Calendar_EventAttendee(['email' => $cleanEmail]);
+                }
+            }
+            if (!empty($attendeeList)) {
+                $event->googleEvent->setAttendees($attendeeList);
+            }
+        }
+
+        if ($request->reminder_minutes) {
+            $reminders = new Google_Service_Calendar_EventReminders([
+                'useDefault' => false,
+                'overrides' => [
+                    ['method' => 'popup', 'minutes' => (int) $request->reminder_minutes]
+                ]
+            ]);
+            $event->googleEvent->setReminders($reminders);
+        } elseif ($request->has_reminder) {
+            $event->addReminder(30, 'popup');
+            $event->addReminder(60, 'email');
         }
         
-        // Handle recurring events
         if ($request->recurring === 'yes') {
             $event->setRecurrence([
                 'RRULE:FREQ=' . ($request->recurrence_freq ?? 'WEEKLY') . 
@@ -147,21 +153,27 @@ class GoogleCalendarController extends Controller
             ]);
         }
         
-        // Upload attachment
         if ($request->hasFile('attachment')) {
             $path = $request->file('attachment')->store('event-attachments', 'public');
             $metadata['attachments'][] = $path;
             $event->description = json_encode($metadata);
         }
         
+        if ($request->has('create_meet')) {
+            $conferenceData = new Google_Service_Calendar_ConferenceData([
+                'createRequest' => [
+                    'requestId' => uniqid(),
+                    'conferenceSolutionKey' => ['type' => 'hangoutsMeet']
+                ]
+            ]);
+            $event->googleEvent->setConferenceData($conferenceData);
+        }
+
         $event->save();
         
         return redirect('/calendar')->with('success', 'Event created successfully!');
     }
     
-    /**
-     * Show single event details
-     */
     public function show($eventId)
     {
         $event = Event::find($eventId);
@@ -174,9 +186,6 @@ class GoogleCalendarController extends Controller
         return view('calendar.show', compact('event', 'metadata'));
     }
     
-    /**
-     * Edit event form
-     */
     public function edit($eventId)
     {
         $event = Event::find($eventId);
@@ -189,9 +198,6 @@ class GoogleCalendarController extends Controller
         return view('calendar.edit', compact('event', 'metadata'));
     }
     
-    /**
-     * Update event
-     */
     public function update(Request $request, $eventId)
     {
         $event = Event::find($eventId);
@@ -213,10 +219,21 @@ class GoogleCalendarController extends Controller
         
         return redirect('/calendar')->with('success', 'Event updated successfully!');
     }
+
+    public function updateEventDate(Request $request, $eventId)
+    {
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json(['error' => 'Event not found'], 404);
+        }
+        
+        $event->startDateTime = Carbon::parse($request->start);
+        $event->endDateTime = Carbon::parse($request->end);
+        $event->save();
+        
+        return response()->json(['success' => 'Event updated successfully']);
+    }
     
-    /**
-     * Delete event
-     */
     public function delete($eventId)
     {
         $event = Event::find($eventId);
@@ -229,9 +246,6 @@ class GoogleCalendarController extends Controller
         return redirect('/calendar')->with('success', 'Event deleted successfully!');
     }
     
-    /**
-     * Export events to CSV
-     */
     public function export(Request $request)
     {
         $events = Event::get();
@@ -239,7 +253,6 @@ class GoogleCalendarController extends Controller
         $filename = 'events-' . date('Y-m-d') . '.csv';
         $handle = fopen('php://temp', 'w+');
         
-        // Add CSV headers
         fputcsv($handle, ['Title', 'Start Date', 'End Date', 'Description', 'Category']);
         
         foreach ($events as $event) {
@@ -262,9 +275,6 @@ class GoogleCalendarController extends Controller
             ->header('Content-Disposition', "attachment; filename=$filename");
     }
     
-    /**
-     * Copy event
-     */
     public function copy($eventId)
     {
         $originalEvent = Event::find($eventId);
@@ -272,7 +282,6 @@ class GoogleCalendarController extends Controller
             abort(404);
         }
         
-        // Create new event copy
         $newEvent = new Event();
         $newEvent->name = $originalEvent->name . ' (Copy)';
         $newEvent->startDateTime = Carbon::parse($originalEvent->startDateTime)->addDay();
@@ -283,9 +292,6 @@ class GoogleCalendarController extends Controller
         return redirect('/calendar')->with('success', 'Event copied successfully!');
     }
     
-    /**
-     * Get upcoming events for dashboard
-     */
     public function upcoming()
     {
         $events = Event::get(Carbon::now(), Carbon::now()->addDays(7));

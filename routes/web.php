@@ -23,6 +23,7 @@ Route::get('/calendar/export/csv', [GoogleCalendarController::class, 'export'])-
 Route::get('/calendar/copy/{eventId}', [GoogleCalendarController::class, 'copy'])->where('eventId', '.*')->name('calendar.copy');
 Route::get('/calendar/upcoming', [GoogleCalendarController::class, 'upcoming'])->name('calendar.upcoming');
 
+Route::post('/calendar/update-date/{id}', [App\Http\Controllers\GoogleCalendarController::class, 'updateEventDate']);
 Route::get('/test', function() {
     try {
         $events = \Spatie\GoogleCalendar\Event::get();
