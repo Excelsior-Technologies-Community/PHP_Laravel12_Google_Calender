@@ -185,16 +185,18 @@
                     
                     <div class="form-group">
                         <label>Event Color</label>
-                        <select name="color">
-                            <option value="#3788d8">Blue (Default)</option>
-                            <option value="#d50000">Red</option>
-                            <option value="#e67c73">Pink</option>
-                            <option value="#f09300">Orange</option>
-                            <option value="#f6c026">Yellow</option>
-                            <option value="#33b679">Green</option>
-                            <option value="#0d7813">Dark Green</option>
-                            <option value="#3f51b5">Indigo</option>
-                            <option value="#9b59b6">Purple</option>
+                        <select name="color_id">
+                            <option value="9">Blue (Default)</option>
+                            <option value="11">Tomato (Red)</option>
+                            <option value="4">Flamingo (Pink)</option>
+                            <option value="6">Tangerine (Orange)</option>
+                            <option value="5">Banana (Yellow)</option>
+                            <option value="10">Basil (Green)</option>
+                            <option value="2">Sage (Light Green)</option>
+                            <option value="7">Peacock (Light Blue)</option>
+                            <option value="3">Grape (Purple)</option>
+                            <option value="8">Graphite (Gray)</option>
+                            <option value="1">Lavender</option>
                         </select>
                     </div>
                     
@@ -204,15 +206,25 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Attendees (comma separated)</label>
+                        <label>Attendees (comma separated emails)</label>
                         <input type="text" name="attendees" placeholder="email1@example.com, email2@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="create_meet" value="1">
+                            Generate Google Meet Link
+                        </label>
                     </div>
                     
                     <div class="form-group">
                         <label>
                             <input type="checkbox" name="has_reminder" value="1">
-                            Enable Reminders
+                            Enable Default Reminders (30m & 60m)
                         </label>
+                        <div style="margin-top: 10px; margin-left: 25px;">
+                            <input type="number" name="reminder_minutes" placeholder="Custom reminder (minutes before)" style="width: 250px;">
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -221,12 +233,12 @@
                             Recurring Event
                         </label>
                         <div style="margin-top: 10px; margin-left: 25px;">
-                            <select name="recurrence_freq">
+                            <select name="recurrence_freq" style="width: 150px; display: inline-block;">
                                 <option value="DAILY">Daily</option>
                                 <option value="WEEKLY">Weekly</option>
                                 <option value="MONTHLY">Monthly</option>
                             </select>
-                            <input type="number" name="recurrence_count" placeholder="Number of occurrences" style="width: 200px; margin-left: 10px;">
+                            <input type="number" name="recurrence_count" placeholder="Number of occurrences" style="width: 200px; margin-left: 10px; display: inline-block;">
                         </div>
                     </div>
                     
