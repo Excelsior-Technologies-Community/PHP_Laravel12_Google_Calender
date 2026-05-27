@@ -3,6 +3,7 @@
 
 <head>
     <title>Calendar View - Google Calendar</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/5.11.3/main.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -86,7 +87,6 @@
         </div>
     </div>
     
-    <!-- Event Details Modal -->
     <div class="modal fade" id="eventModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -118,8 +118,32 @@
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
                 events: '/calendar/events',
+                editable: true,
+                eventDrop: function(info) {
+                    var start = info.event.start.toISOString();
+                    var end = info.event.end ? info.event.end.toISOString() : start;
+                    
+                    fetch('/calendar/update-date/' + info.event.id, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            start: start,
+                            end: end
+                        })
+                    }).then(response => {
+                        if(!response.ok) {
+                            info.revert();
+                            alert("Error updating event date.");
+                        }
+                    }).catch(error => {
+                        info.revert();
+                        alert("Error updating event date.");
+                    });
+                },
                 eventClick: function(info) {
-                    // Show event details in modal
                     var modal = new bootstrap.Modal(document.getElementById('eventModal'));
                     document.getElementById('eventDetails').innerHTML = `
                         <h4>${info.event.title}</h4>
@@ -134,7 +158,6 @@
                     modal.show();
                 },
                 eventDidMount: function(info) {
-                    // Add tooltip
                     $(info.el).tooltip({
                         title: info.event.title,
                         placement: 'top'
